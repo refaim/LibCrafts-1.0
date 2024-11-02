@@ -11,7 +11,7 @@
 local LibStub = getglobal("LibStub")
 assert(LibStub ~= nil)
 
-local untyped_lib, _ = LibStub:NewLibrary("LibCrafts-1.0", 1)
+local untyped_lib, _ = LibStub:NewLibrary("LibCrafts-1.0", 2)
 if not untyped_lib then return end
 
 local lib = --[[---@type LibCrafts]] untyped_lib
@@ -20,7 +20,7 @@ if lib.modules_by_name == nil then
 end
 
 lib.env = {
-    is_debug = true,
+    is_debug = false,
     is_turtle_wow = TargetHPText ~= nil and TargetHPPercText ~= nil,
 }
 
