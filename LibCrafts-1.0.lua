@@ -11,7 +11,7 @@
 local LibStub = getglobal("LibStub")
 assert(LibStub ~= nil)
 
-local untyped_lib, _ = LibStub:NewLibrary("LibCrafts-1.0", 5)
+local untyped_lib, _ = LibStub:NewLibrary("LibCrafts-1.0", 6)
 if not untyped_lib then return end
 
 ---@class LibCrafts
@@ -20,12 +20,14 @@ if not untyped_lib then return end
 ---@field modules_by_name table<string, LcModule>
 ---@field spell_id_to_craft table<number, LcCraft>
 ---@field reagent_id_to_spell_ids_set table<number, table<number, boolean>>
+---@field recipe_id_to_spell_ids_set table<number, table<number, boolean>>
 ---@field localized_profession_name_to_spell_ids_set table<string, table<number, boolean>>
 
 local lib = --[[---@type LibCrafts]] untyped_lib
 lib.modules_by_name = lib.modules_by_name or {}
 lib.spell_id_to_craft = lib.spell_id_to_craft or {}
 lib.reagent_id_to_spell_ids_set = lib.reagent_id_to_spell_ids_set or {}
+lib.recipe_id_to_spell_ids_set = lib.recipe_id_to_spell_ids_set or {}
 lib.localized_profession_name_to_spell_ids_set = lib.localized_profession_name_to_spell_ids_set or {}
 
 ---@type table[]
@@ -33,6 +35,7 @@ local data_tables = {
     lib.modules_by_name,
     lib.spell_id_to_craft,
     lib.reagent_id_to_spell_ids_set,
+    lib.recipe_id_to_spell_ids_set,
     lib.localized_profession_name_to_spell_ids_set,
 }
 
@@ -48,6 +51,7 @@ if not all_data_tables_filled then
     lib.modules_by_name = {}
     lib.spell_id_to_craft = {}
     lib.reagent_id_to_spell_ids_set = {}
+    lib.recipe_id_to_spell_ids_set = {}
     lib.localized_profession_name_to_spell_ids_set = {}
 end
 
@@ -168,6 +172,19 @@ end
 function lib:GetCraftsByReagentId(item_id)
     local crafts = {}
     for spell_id, _ in pairs(self.reagent_id_to_spell_ids_set[item_id] or {}) do
+        tinsert(crafts, self.spell_id_to_craft[spell_id])
+    end
+    return crafts
+end
+
+---
+--- Returns a list of crafts by recipe item id.
+---
+---@param item_id number
+---@return LcCraft[]
+function lib:GetCraftsByRecipeId(item_id)
+    local crafts = {}
+    for spell_id, _ in pairs(self.recipe_id_to_spell_ids_set[item_id] or {}) do
         tinsert(crafts, self.spell_id_to_craft[spell_id])
     end
     return crafts
@@ -400,6 +417,11 @@ function Craft:Save()
         for reagent_id, _ in pairs(old_craft.reagent_id_to_count) do
             lib.reagent_id_to_spell_ids_set[reagent_id][self.spell_id] = nil
         end
+
+        for _, recipe in ipairs(old_craft.recipes) do
+            lib.recipe_id_to_spell_ids_set[recipe.id][self.spell_id] = nil
+        end
+
         lib.localized_profession_name_to_spell_ids_set[old_craft.localized_profession_name][self.spell_id] = nil
     end
 
@@ -408,6 +430,11 @@ function Craft:Save()
     for reagent_id, _ in pairs(self.reagent_id_to_count) do
         get_or_create_set(lib.reagent_id_to_spell_ids_set, reagent_id)[self.spell_id] = true
     end
+
+    for _, recipe in ipairs(self.recipes) do
+        get_or_create_set(lib.recipe_id_to_spell_ids_set, recipe.id)[self.spell_id] = true
+    end
+
     get_or_create_set(lib.localized_profession_name_to_spell_ids_set, self.localized_profession_name)[self.spell_id] = true
 end
 
